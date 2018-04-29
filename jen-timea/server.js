@@ -3,28 +3,19 @@
 const pg = require('pg');
 const fs = require('fs');
 const express = require('express');
-
 const PORT = process.env.PORT || 3000;
 const app = express();
-
-// Windows and Linux users: You should have retained the user/password from the pre-work for this course.
-// Your OS may require that your conString is composed of additional information including user and password.
-// const conString = 'postgres://USER:PASSWORD@HOST:PORT/DBNAME';
-
-// Mac:
-const conString = 'postgres://localhost:5432/kilovolt';
-
+const conString = 'postgres://postgres:1234@localhost:5432/kilovolt';
 const client = new pg.Client(conString);
-
-// REVIEW: Use the client object to connect to our DB.
 client.connect();
-
+client.on('error', err => {
+  console.error(err);
+});
 
 // REVIEW: Install the middleware plugins so that our app can parse the request body
 app.use(express.json());
 app.use(express.urlencoded());
 app.use(express.static('./public'));
-
 
 // REVIEW: Routes for requesting HTML resources
 app.get('/new', (request, response) => {
@@ -32,7 +23,6 @@ app.get('/new', (request, response) => {
   // Picture number 2 corresponds to the code and it represents to the 'R' (read/get) section of the CRUD process.  No methods are interactinv with this.
   response.sendFile('new.html', {root: './public'});
 });
-
 
 // REVIEW: Routes for making API calls to use CRUD Operations on our database
 app.get('/articles', (request, response) => {
@@ -74,9 +64,20 @@ app.post('/articles', (request, response) => {
 
 app.put('/articles/:id', (request, response) => {
   // COMMENT: What number(s) of the full-stack-diagram.png image correspond to the following line of code? Which method of article.js is interacting with this particular piece of `server.js`? What part of CRUD is being enacted/managed by this particular piece of code?
-  // This corresponds step 3 of the diagram and to the 'U' (update) portion of CRUD. and the Article.prototype.updateRecord section of app.js.
+  // This corresponds step 3 of the diagram and to the 'U' (update) portion of CRUD. and the Article.prototype.updateRecord section of article.js.
   client.query(
-    ` `, []
+    `UPDATE articles
+    SET (title=$1, author=$2, "authorUrl"=$3, category=$4, "publishedOn"=$5, body=$6)
+    WHERE article_id=$7;`,
+    [
+      request.body.title,
+      request.body.author,
+      request.body.authorUrl,
+      request.body.category,
+      request.body.publishedOn,
+      request.body.body,
+      request.params.id
+    ]
   )
     .then(() => {
       response.send('update complete')
@@ -103,9 +104,9 @@ app.delete('/articles/:id', (request, response) => {
 
 app.delete('/articles', (request, response) => {
   // COMMENT: What number(s) of the full-stack-diagram.png image correspond to the following line of code? Which method of article.js is interacting with this particular piece of `server.js`? What part of CRUD is being enacted/managed by this particular piece of code?
-  //This corresponds to number 3, part of the DELETE portion of CRUD, and it is connected to Article.prototype.deleteRecord 
+  //This corresponds to number 3, part of the DELETE portion of CRUD, and it is connected to Article.prototype.deleteRecord
   client.query(
-    'UPDATE articles SET author = "Timea Jen" WHERE article_id = 1'
+    'UPDATE * FROM articles'
   )
     .then(() => {
       response.send('Delete complete')
@@ -170,3 +171,5 @@ function loadDB() {
       console.error(err);
     });
 }
+// loadArticles();
+// loadDB();
